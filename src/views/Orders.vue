@@ -5,26 +5,93 @@
         <div class="container-fluid mt--7">
             <div class="row">
                 <div class="col">
-                    <div class="card shadow"
-                         :class="type === 'dark' ? 'bg-default': ''">
-                      <div class="card-header border-0"
-                           :class="type === 'dark' ? 'bg-transparent': ''">
+                    <div class="card shadow">
+                      <div class="card-header border-0">
                         <div class="row align-items-center">
                           <div class="col">
-                            <h3 class="mb-0">
+                            <h3 class="mb-5">
                               Orders
                             </h3>
                           </div>
-                          <div class="col text-right">
-                            <base-button type="primary" size="sm">See all</base-button>
+                        </div>
+                        <div class="row align-items-center">
+                          <div class="col">
+                            <b-form-group label-cols-sm="3" label="Search" class="mb-0">
+                              <b-input-group>
+                                <b-form-input
+                                  v-model="filter">
+                                </b-form-input>
+                                <b-input-group-append>
+                                  <b-button
+                                    variant="primary"
+                                    :disabled="!filter"
+                                    @click="filter = ''"
+                                    v-b-tooltip
+                                    title="Clear">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                  </b-button>
+                                </b-input-group-append>
+                              </b-input-group>
+                            </b-form-group>
+                          </div>
+                          <div class="col">
+                            <b-form-group
+                              label-cols-sm="3"
+                              class="mb-0"
+                              label="Display Size"
+                              label-for="displaySize">
+                              <multiselect
+                                id="displaySize"
+                                v-model="perPage"
+                                :show-labels="false"
+                                :options="pageOptions">
+                              </multiselect>
+                            </b-form-group>
                           </div>
                         </div>
                       </div>
 
                       <div class="table-responsive">
-                        <base-table class="table align-items-center table-flush"
-                                    :class="type === 'dark' ? 'table-dark': ''"
-                                    :thead-classes="type === 'dark' ? 'thead-dark': 'thead-light'"
+                        <b-table
+                          ref="table"
+                          api-url="order"
+                          :no-sort-reset="true"
+                          :sort-by.sync="sortBy"
+                          :sort-desc.sync="sortDesc"
+                          :sort-direction="sortDirection"
+                          :current-page="currentPage"
+                          :per-page="perPage"
+                          :filter="filter"
+                          :items="provider"
+                          :fields="fields"
+                          @filtered="onFiltered"
+                          show-empty>
+
+                          <!-- <template v-slot:cell(actions)="row">
+                            <b-button-group>
+                              <b-button
+                                variant="outline-success"
+                                size="sm"
+                                v-b-tooltip.hover
+                                :to="{ name: 'EditArea', params: { id: row.item['areas.id'] } }"
+                                title="Edit"
+                                v-if="canUpdate">
+                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                              </b-button>
+                              <b-button
+                                variant="outline-danger"
+                                size="sm"
+                                v-b-tooltip.hover
+                                @click="showDialog(row.item)"
+                                title="Delete"
+                                v-if="canDelete">
+                                <i class="fa fa-trash" aria-hidden="true"></i>
+                              </b-button>
+                            </b-button-group>
+                          </template> -->
+                        </b-table>
+                        <!-- <base-table class="table align-items-center table-flush"
+                                    :thead-classes="'thead-light'"
                                     tbody-classes="list"
                                     :data="tableData">
                           <template slot="columns">
@@ -66,12 +133,17 @@
 
                           </template>
 
-                        </base-table>
+                        </base-table> -->
                       </div>
 
-                      <div class="card-footer d-flex justify-content-end"
-                           :class="type === 'dark' ? 'bg-transparent': ''">
-                        <base-pagination total="30"></base-pagination>
+                      <div class="card-footer d-flex justify-content-end">
+                        <!-- <base-pagination total="30"></base-pagination> -->
+                        <b-pagination
+                          v-model="currentPage"
+                          :total-rows="totalRows"
+                          :per-page="perPage"
+                          class="my-0"
+                        ></b-pagination>
                       </div>
 
                     </div>
@@ -83,13 +155,14 @@
 </template>
 <script>
   import faker from 'faker';
+  import api from '@/api';
 
   export default {
     name: 'orders',
     data() {
       const tableData = [];
 
-      for (let i = 0 ; i < faker.random.number() ; i++) {
+      for (let i = 0 ; i < 100 ; i++) {
         tableData.push({
           orderId: faker.random.number(),
           orderDate: faker.date.future(),
@@ -99,7 +172,47 @@
       }
 
       return {
-        tableData: tableData
+        tableData: tableData,
+        fields: [
+          { key: 'orderId', label: 'Order ID', sortable: true, sortDirection: 'asc' },
+          { key: 'orderDate', label: 'Order Date', sortable: true, sortDirection: 'desc' },
+          { key: 'orderName', label: 'Order Name', sortable: true, sortDirection: 'asc' },
+          { key: 'customerName', label: 'Customer Name', sortable: true, sortDirection: 'asc' }
+        ],
+        totalRows: 1,
+        currentPage: 1,
+        perPage: 10,
+        pageOptions: [10, 25, 50],
+        sortBy: 'orderId',
+        sortDirection: 'last',
+        sortDesc: false,
+        filter: ''
+      }
+    },
+    methods: {
+      provider ({ apiUrl, filter, sortBy, sortDesc, perPage, currentPage }, callback) {
+        api.getTableData(apiUrl, {
+          filter,
+          sortBy,
+          sortDesc,
+          perPage,
+          currentPage
+        })
+          .then(({ data }) => {
+            this.totalRows = 30
+
+            callback(data)
+          })
+          .catch(() => {
+            this.notifyError('Unable to fetch areas')
+
+            callback([])
+          })
+      },
+      onFiltered(filteredItems) {
+        // Trigger pagination to update the number of buttons/pages due to filtering
+        this.totalRows = filteredItems.length
+        this.currentPage = 1
       }
     }
   };

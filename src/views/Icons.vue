@@ -98,11 +98,11 @@
 <script>
   import Vue from 'vue'
   import VueClipboard from 'vue-clipboard2'
-  import BTooltipDirective from 'bootstrap-vue/esm/directives/tooltip'
+  import { VBTooltip } from 'bootstrap-vue'
   Vue.use(VueClipboard)
   export default {
     directives: {
-      'b-tooltip': BTooltipDirective
+      'b-tooltip': VBTooltip
     },
     data() {
       return {

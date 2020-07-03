@@ -16,13 +16,19 @@
 
 */
 import Vue from 'vue'
+import BootstrapVue from 'bootstrap-vue'
 import App from './App.vue'
 import router from './router'
 import './registerServiceWorker'
 import ArgonDashboard from './plugins/argon-dashboard'
+import Multiselect from 'vue-multiselect'
+import { mixin } from '@/utils'
+import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 Vue.config.productionTip = false
-
+Vue.use(BootstrapVue)
+Vue.mixin(mixin)
+Vue.component('multiselect', Multiselect)
 Vue.use(ArgonDashboard)
 new Vue({
   router,
